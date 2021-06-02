@@ -14,6 +14,7 @@ async def show_menu(message: Message):
 
 @dp.message_handler(Text(equals=["Wildberries", "Lamoda", "Поиск"]), state=Shop.Menu)
 async def chose_shop(message: Message, state: FSMContext):
+
     if message.text == "Поиск":
         await Shop.Search.set()
         await message.answer("Введите название товара", reply_markup=ReplyKeyboardRemove())
@@ -28,7 +29,7 @@ async def chose_shop(message: Message, state: FSMContext):
         await state.update_data(catalog=catalog[message.text], table=table, shop=message.text)
         kb.add(*catalog[message.text])
         kb.add("Назад")
-        kb.add ("Бренды")
+        kb.add("Бренды")
 
         await message.answer(f"Вы выбрали {message.text}, выберите категорию",
 reply_markup=kb)

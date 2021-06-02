@@ -9,6 +9,7 @@ from . import menu
 
 @dp.message_handler(state=Shop.Search)
 async def show_menu(message: Message):
+    """Вызывает функции, чтобы создать бд и далее делает запрос к этой бд и выводит результат"""
     await message.answer("Минуточку", reply_markup=ReplyKeyboardRemove())
     url = find_resault.search(message.text)
     find_resault.create_bd_with_cur_product(url, shop='Shop', table=message.text)

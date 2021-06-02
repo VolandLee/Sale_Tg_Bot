@@ -6,7 +6,7 @@ from multiprocessing import Process
 import re
 import functools
 
-base_url = "https://www.wildberries.ru"
+BASE_URL = "https://www.wildberries.ru"
 
 
 def get_html(url):
@@ -15,6 +15,10 @@ def get_html(url):
 
 
 def collect(html, shop, table):
+    """Собирает данные о товаре.
+    Аргументы: html страница с товарами, магазин, таблица содержит результат поиска в виде строки например:
+    'Кроссовки для детей'.
+    Функция создаёт шаблон в который заносит полученные данные и добавляет их в базу данных"""
     con = sqlite3.connect('{}.db'.format(shop))
     cur = con.cursor()
 
@@ -55,6 +59,8 @@ def collect(html, shop, table):
 
 
 def create_bd_with_cur_product(url, shop, table):
+    """Создаёт таблицу в бд и параллельно апускает функцию manage
+    Если пользователь нажал на поиск, то таблица будет создана в бд 'Shop' иначе в выбранном магазине"""
     try:
         con = sqlite3.connect('{}.db'.format(shop))
         cur = con.cursor()
@@ -75,6 +81,8 @@ def create_bd_with_cur_product(url, shop, table):
 
 
 def manage(url, shop, table, l):
+    """Строит url адрес страницы и передаёт его Html текст
+    аргумент l это номер параллельного процесса который запускает функция create_bd_with_cur_product"""
     for i in range(1, 5):
         shablon = url + '?sort=popular&page={}'.format(l * i)
         print(shablon)
@@ -102,12 +110,14 @@ if __name__ == '__main__':
 
 
 def search(text):
-    url = base_url + '/catalog/0/search.aspx?search={}&xsearch=true'.format(text)
+    """Запускается если пользователь нажал поиск и строит url"""
+    url = BASE_URL + '/catalog/0/search.aspx?search={}&xsearch=true'.format(text)
     print(url)
     return url
 
 
 def create_catalog(catalog, html, shablon, url='', key=''):
+
     catalog.append({})
 
     soup = BeautifulSoup(html, "html.parser")
@@ -130,12 +140,12 @@ def proc1(catalog):
 
         html = get_html(*catalog[1][i])
 
-        a = create_catalog(catalog[1][i], html.text, ["ul", 'sidemenu'], url=base_url)
+        a = create_catalog(catalog[1][i], html.text, ["ul", 'sidemenu'], url=BASE_URL)
 
         for l in a[1]:
 
             html = get_html(*a[1][l])
-            create_catalog(a[1][l], html.text, ["ul", 'sidemenu'], url=base_url)
+            create_catalog(a[1][l], html.text, ["ul", 'sidemenu'], url=BASE_URL)
         print(catalog[1][i])
 
 
@@ -145,11 +155,12 @@ def proc1(catalog):
 
 
 def proc():
+    """Можно использовать вручную, чтобы обновить каталог магазина"""
     del_key = []
     catalog = ["https://www.wildberries.ru/brandlist/all"]
 
     html = get_html("https://www.wildberries.ru/brandlist/all")
-    catalog = create_catalog(catalog, html.text, ['ul', 'brand-list__content'], url=base_url, key="1")
+    catalog = create_catalog(catalog, html.text, ['ul', 'brand-list__content'], url=BASE_URL, key="1")
 
     proc1(catalog)
     print(catalog)

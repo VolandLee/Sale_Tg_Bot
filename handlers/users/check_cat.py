@@ -10,7 +10,14 @@ from views import find_resault, sql
 import pickle
 
 @dp.message_handler(state=Shop.Check_Cat)
+
 async def chose_shop(message: Message, state: FSMContext):
+    """
+    Открывает каталог магазина и каталог брендов. структура кнопок организована в виде вложенного словаря и
+     пользователя показывается ключи этого словаря. Когда он нажимает кнопку, то переходит вниз на один уровень
+     вложенности, где структурой кнопок становится содержимое new_dict = dict[key] когда он доходит до последнего уровня
+     значением кллюча становится url адрес и программа вызывает функции, чтобы создать бд и далее делает запрос к этой
+      бд и выводит результат"""
     if message.text == "Назад":
         await menu.show_menu(message)
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)

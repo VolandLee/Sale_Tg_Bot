@@ -1,6 +1,7 @@
 import sqlite3
 
 def choose(shop, table):
+    """Получает данные с бд и сортирует их"""
     con = sqlite3.connect('{}.db'.format(shop))
     cur = con.cursor()
     ans = cur.execute("SELECT * FROM `{}` ORDER BY sale DESC".format(table)).fetchmany(3)
