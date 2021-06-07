@@ -24,10 +24,10 @@ def collect(html, shop, table):
     else:
         key = ['catalog_main_table', 'a', 'ref_goods_n_p j-open-full-product-card', 'https://www.wildberries.ru', 'thumbnail']
 
-    """Собирает данные о товаре.
-    Аргументы: html страница с товарами, магазин, таблица содержит результат поиска в виде строки например:
-    'Кроссовки для детей'.
-    Функция создаёт шаблон в который заносит полученные данные и добавляет их в базу данных"""
+    """Collects data on the product.
+     Arguments: HTML page with goods, shop, table contains the result of a search in the form of a string for example:
+     'Sneakers for children'.
+     The function creates a template in which the data enters the received and adds them to the database"""
     con = sqlite3.connect('{}.db'.format(shop))
     cur = con.cursor()
 
@@ -101,8 +101,8 @@ def collect(html, shop, table):
 
 
 def create_bd_with_cur_product(url, shop, table):
-    """Создаёт таблицу в бд и параллельно апускает функцию manage
-    Если пользователь нажал на поиск, то таблица будет создана в бд 'Shop' иначе в выбранном магазине"""
+    """Creates a table in the database and parallel to the manage function
+     If the user pressed the search, the table will be created in the database 'Shop' otherwise in the selected store """
     try:
         con = sqlite3.connect('{}.db'.format(shop))
         cur = con.cursor()
@@ -123,8 +123,8 @@ def create_bd_with_cur_product(url, shop, table):
 
 
 def manage(url, shop, table, l):
-    """Строит url адрес страницы и передаёт его Html текст
-    аргумент l это номер параллельного процесса который запускает функция create_bd_with_cur_product"""
+    """Builds the URL address of the page and transmits it with HTML text
+     Argument L This is a parallel process number that starts the CREATE_BD_WITH_CUR_PRODUCT function """
     for i in range(1, 5):
         shablon = url + '?sort=popular&page={}'.format(l * i)
         print(shablon)
@@ -152,9 +152,11 @@ if __name__ == '__main__':
 """
 
 
-def search(text):
+def search(shop, text):
     """Запускается если пользователь нажал поиск и строит url"""
-    url = BASE_URL + '/catalog/0/search.aspx?search={}&xsearch=true'.format(text)
+    BASE_URL = {"Wildberries": "https://www.wildberries.ru/catalog/0/search.aspx?search=", "Lamoda": "https://www.lamoda.ru/catalogsearch/result/?q="}
+    url = BASE_URL[shop]+text+"&"
+
     print(url)
     return url
 
@@ -204,7 +206,7 @@ base = {'Женщинам': "https://www.lamoda.ru/c/4153/default-women/", 'Му
 
 
 def proc():
-    """Можно использовать вручную, чтобы обновить каталог магазина"""
+    """You can use manually to update the store catalog """
     del_key = []
     catalog = ["https://www.wildberries.ru/brandlist/all"]
 
@@ -217,7 +219,7 @@ def proc():
 
 def create_cat():
     for i in base:
-        lamoda = ["https://www.lamoda.ru/women-home/",]
+        lamoda = ["https://www.lamoda.ru/women-home/"]
         html = get_html(base[i])
         catalog = create_catalog(lamoda, html.text, ['ul', 'cat-nav dt102_1'], url='https://www.lamoda.ru/')
 
