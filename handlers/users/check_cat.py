@@ -13,11 +13,11 @@ import pickle
 
 async def chose_shop(message: Message, state: FSMContext):
     """
-    Открывает каталог магазина и каталог брендов. структура кнопок организована в виде вложенного словаря и
-     пользователя показывается ключи этого словаря. Когда он нажимает кнопку, то переходит вниз на один уровень
-     вложенности, где структурой кнопок становится содержимое new_dict = dict[key] когда он доходит до последнего уровня
-     значением кллюча становится url адрес и программа вызывает функции, чтобы создать бд и далее делает запрос к этой
-      бд и выводит результат"""
+    Opens the store catalog and brands catalog. The structure of the buttons is organized as an embedded dictionary and
+      The user shows the keys of this dictionary. When he presses a button, it goes down one level
+      nesting, where the contents of the buttons becomes new_dict = DICT [KEY] when it comes to the last level
+      The Klludu value becomes the URL address and the program calls functions to create the database and then makes a request to this
+       database and displays the result """
     if message.text == "Назад":
         await menu.show_menu(message)
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -36,18 +36,21 @@ async def chose_shop(message: Message, state: FSMContext):
     await state.update_data(catalog=catalog, table=context['table'])
     print(context)
     if isinstance(catalog, str):
-        await message.answer("Минуточку", reply_markup=ReplyKeyboardRemove())
+        await message.answer("Выполняю поиск, пожалуйста подождите", reply_markup=ReplyKeyboardRemove())
         await Shop.Menu.set()
         print(catalog, context['shop'], context['table'])
         find_resault.create_bd_with_cur_product(catalog, context['shop'], context['table'])
         ans = sql.choose(context['shop'], context['table'])
-        for el in ans:
-            await message.answer(el)
-        await menu.show_menu(message)
+        if ans:
+            for el in ans:
+                await message.answer (el)
+        else:
+            await message.answer (f"В магазине {i} по вашему запросу ничего не найдено")
     else:
         kb.add(*catalog)
         kb.add("Назад")
-        kb.add("Бренды")
+        if context["shop"] == "Wildberries":
+            kb.add("Бренды")
 
         await message.answer("Выберите категорию товара", reply_markup=kb)
         await Shop.Check_Cat.set()
