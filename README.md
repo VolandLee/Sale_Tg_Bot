@@ -1,12 +1,11 @@
 # Sale_Tg_Bot
-Бот ищет товары в интернет магазинах заносит их в бд и выдаёт товары с наибольшей скидки.
+Bot is looking for goods in online stores lists them in the database and gives goods from the greatest discount. 
 
 
 
-Для запуска:
+For start:
 
-
-1 создайте файл .env и поместите в него ваши данные
+1 Create a .env file and place your data in it, as shown below. 
 
 
 ADMINS=12345678,12345677,12345676
@@ -16,5 +15,5 @@ BOT_TOKEN=123452345243:Asdfasdfasf
 ip=localhost
 
 
-2 запустите модуль app.py
+2 Start the App.py module 
 
