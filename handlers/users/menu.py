@@ -27,6 +27,7 @@ async def chose_shop(message: Message, state: FSMContext):
         with open('keyboards/default/catalog/{}/catalog.pickle'.format(message.text), "rb") as f:
             catalog = pickle.load(f)
         await state.update_data(catalog=catalog[message.text], table=table, shop=message.text)
+
         kb.add(*catalog[message.text])
         kb.add("Назад")
         kb.add("Бренды")

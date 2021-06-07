@@ -31,12 +31,14 @@ async def chose_shop(message: Message, state: FSMContext):
         return 0
 
     context['table'] += " " + message.text
+    print(context["catalog"])
     catalog = copy.deepcopy(context["catalog"][message.text])
     await state.update_data(catalog=catalog, table=context['table'])
     print(context)
     if isinstance(catalog, str):
         await message.answer("Минуточку", reply_markup=ReplyKeyboardRemove())
         await Shop.Menu.set()
+        print(catalog, context['shop'], context['table'])
         find_resault.create_bd_with_cur_product(catalog, context['shop'], context['table'])
         ans = sql.choose(context['shop'], context['table'])
         for el in ans:

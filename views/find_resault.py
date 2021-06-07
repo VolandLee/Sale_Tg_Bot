@@ -5,16 +5,25 @@ from multiprocessing import Pool
 from multiprocessing import Process
 import re
 import functools
+import time
 
 BASE_URL = "https://www.wildberries.ru"
+HEADERS = {'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 YaBrowser/21.5.1.330 Yowser/2.5 Safari/537.36",
+               'accept': "*/*"}
+
+def get_html(url, params=None):
 
 
-def get_html(url):
-    r = requests.get(url)
+    r = requests.get(url, headers=HEADERS, params=params)
     return r
 
 
 def collect(html, shop, table):
+    if shop == "Lamoda":
+        key = ['products-catalog__list', 'a', 'products-list-item__link link', 'https://www.lamoda.ru', 'products-list-item__img']
+    else:
+        key = ['catalog_main_table', 'a', 'ref_goods_n_p j-open-full-product-card', 'https://www.wildberries.ru', 'thumbnail']
+
     """Собирает данные о товаре.
     Аргументы: html страница с товарами, магазин, таблица содержит результат поиска в виде строки например:
     'Кроссовки для детей'.
@@ -24,37 +33,70 @@ def collect(html, shop, table):
 
     soap = BeautifulSoup(html, "html.parser")
 
-    products = soap.find('div', class_="catalog_main_table").find_all('a',
-                                                                      class_="ref_goods_n_p j-open-full-product-card")
-    resualt_search = soap.find('p', class_="searching-results-text")
-    if resualt_search:
-        return resualt_search.get_text()
-    if not products:
-        return "Введите полное название продукта"
+    products = soap.find('div', class_="{}".format(key[0])).find_all("{}".format(key[1]), class_="{}".format(key[2]))
+
+    if shop != "Lamoda":
+        resualt_search = soap.find('p', class_="searching-results-text")
+        if resualt_search:
+            return resualt_search.get_text()
+        if not products:
+            return "Введите полное название продукта"
+
     for product in products:
 
         shablon = []
-        shablon.append('https://www.wildberries.ru' + product["href"])
-        a = product.find('img', class_="thumbnail")
+        shablon.append('{}'.format(key[3]) + product["href"])
+        a = product.find('img', class_="{}".format(key[4]))
         shablon.append(a['alt'])
-        if a['src'][-3:] == 'jpg':
-            shablon.append(a['src'])
-        else:
+        if shop == "Lamoda":
+            shablon.append (a['src'])
+        elif a['src'][-3:] != 'jpg':
+
             shablon.append(a['data-original'])
-
-        pr = product.find('span', class_="price").get_text()
-
-        pr = re.sub("[-| |%|\xa0|\n]", "", pr).split('₽')
-        if len(pr) == 2:
-            pr = [int(pr[0]), 0, 0]
         else:
-            pr = [int(el) for el in pr]
-        shablon.extend(pr)
+            shablon.append(a['src'])
 
-        cur.execute(
-            "INSERT INTO `{}` (`id`, `title`, `image`, `new_price`, `old_price`, `sale`) VALUES(?, ?, ?, ?, ?, ?)".format(
+        if shop == "Lamoda":
+            try:
+                a = product.find('span', class_='price__actual parts__price_cd-disabled').get_text()
+
+            except Exception:
+                price = product.find('span', class_='price').get_text ()
+                price = price.replace(" ", "")
+                price = int(price[:-1])
+                shablon.extend([price, 0, 0])
+
+
+
+            else:
+                price = product.find('span', class_='price').get_text ()
+                price = price.replace(" ", "")
+
+                a = (len(price) - 1) // 2
+
+                new_price = int(price[-a-1:-1])
+
+                old_price = int(price[0:-a-1])
+
+                sale = int((new_price / old_price) * 100)
+                shablon.extend([new_price, old_price, 100 - sale])
+
+
+        else:
+
+            pr = product.find ('span', class_="price").get_text ()
+
+            pr = re.sub ("[-| |%|\xa0|\n]", "", pr).split ('₽')
+            if len (pr) == 2:
+                pr = [int (pr[0]), 0, 0]
+            else:
+                pr = [int (el) for el in pr]
+            shablon.extend(pr)
+
+        cur.execute (
+            "INSERT INTO `{}` (`id`, `title`, `image`, `new_price`, `old_price`, `sale`) VALUES(?, ?, ?, ?, ?, ?)".format (
                 table), (shablon))
-        con.commit()
+        con.commit ()
 
 
 
@@ -87,6 +129,7 @@ def manage(url, shop, table, l):
         shablon = url + '?sort=popular&page={}'.format(l * i)
         print(shablon)
         html = get_html(shablon)
+
         if html.status_code == 200:
             try:
                 collect(html.text, shop, table)
@@ -121,15 +164,21 @@ def create_catalog(catalog, html, shablon, url='', key=''):
     catalog.append({})
 
     soup = BeautifulSoup(html, "html.parser")
-    items = soup.find("{}".format(shablon[0]), class_="{}".format(shablon[1])).find_all('a')
+    try:
+        items = soup.find("{}".format(shablon[0]), class_="{}".format(shablon[1])).find_all('a')
+    except Exception:
+        return
 
     for item in items:
-        if key:
-            if url + item['href'] != catalog[0]:
-                catalog[1][item.img["alt"]] = [url + item['href']]
+
+        if item['data-level'] != '2':
+            catalog[1][item.get_text()] = [url + item['href'], {}]
+            key = item.get_text()
         else:
-            if url + item['href'] != catalog[0]:
-                catalog[1][item.get_text()] = [url + item['href']]
+            catalog[1][key][1][item.get_text()] = [url + item['href']]
+
+
+
 
 
     return catalog
@@ -151,7 +200,7 @@ def proc1(catalog):
 
 
 
-
+base = {'Женщинам': "https://www.lamoda.ru/c/4153/default-women/", 'Мужчинам' : "https://www.lamoda.ru/c/4152/default-men/", 'Детям' : "https://www.lamoda.ru/c/4154/default-kids/"}
 
 
 def proc():
@@ -164,6 +213,22 @@ def proc():
 
     proc1(catalog)
     print(catalog)
+
+
+def create_cat():
+    for i in base:
+        lamoda = ["https://www.lamoda.ru/women-home/",]
+        html = get_html(base[i])
+        catalog = create_catalog(lamoda, html.text, ['ul', 'cat-nav dt102_1'], url='https://www.lamoda.ru/')
+
+        for l in catalog[1]:
+            for m in catalog[1][l][1]:
+
+                html = get_html(catalog[1][l][1][m][0])
+                create_catalog(catalog[1][l][1][m], html.text, ['ul', 'cat-nav cat-nav-sub dt102_3'], url='https://www.lamoda.ru/')
+        base[i] = catalog
+        print(base)
+
 
 
 
