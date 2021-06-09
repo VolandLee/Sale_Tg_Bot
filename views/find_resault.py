@@ -6,7 +6,7 @@ from multiprocessing import Process
 import re
 import functools
 import time
-
+from multiprocessing import cpu_count
 BASE_URL = "https://www.wildberries.ru"
 HEADERS = {'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 YaBrowser/21.5.1.330 Yowser/2.5 Safari/537.36",
                'accept': "*/*"}
@@ -43,7 +43,6 @@ def collect(html, shop, table):
             return "Введите полное название продукта"
 
     for product in products:
-
         shablon = []
         shablon.append('{}'.format(key[3]) + product["href"])
         a = product.find('img', class_="{}".format(key[4]))
@@ -51,37 +50,25 @@ def collect(html, shop, table):
         if shop == "Lamoda":
             shablon.append (a['src'])
         elif a['src'][-3:] != 'jpg':
-
             shablon.append(a['data-original'])
         else:
             shablon.append(a['src'])
-
         if shop == "Lamoda":
             try:
                 a = product.find('span', class_='price__actual parts__price_cd-disabled').get_text()
-
             except Exception:
                 price = product.find('span', class_='price').get_text ()
                 price = price.replace(" ", "")
                 price = int(price[:-1])
                 shablon.extend([price, 0, 0])
-
-
-
             else:
                 price = product.find('span', class_='price').get_text ()
                 price = price.replace(" ", "")
-
                 a = (len(price) - 1) // 2
-
                 new_price = int(price[-a-1:-1])
-
                 old_price = int(price[0:-a-1])
-
                 sale = int((new_price / old_price) * 100)
                 shablon.extend([new_price, old_price, 100 - sale])
-
-
         else:
 
             pr = product.find ('span', class_="price").get_text ()
@@ -112,8 +99,8 @@ def create_bd_with_cur_product(url, shop, table):
     except Exception:
         return 0
     else:
-
-        with Pool(12) as p:
+        proc_num = cpu_count()
+        with Pool(proc_num) as p:
             p.map(functools.partial(manage, url, shop, table), [i for i in range(12)])
 
 
